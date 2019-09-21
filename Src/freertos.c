@@ -6,6 +6,7 @@
 #include "mavlink.h"
 #include "usart.h"
 #include "adxl345.h"
+#include "HMC5883L.h"
 SemaphoreHandle_t uart_tx_Semaphore;
 osThreadId StartingtaskHandle;
 
@@ -79,7 +80,7 @@ void StartDefaultTask(void const * argument)
 
 	if(uart_tx_Semaphore !=NULL ){
 
-		if( xSemaphoreTake( uart_tx_Semaphore, ( TickType_t ) 10 ) == pdTRUE )
+		if( xSemaphoreTake( uart_tx_Semaphore, ( TickType_t ) 5 ) == pdTRUE )
 			{
 
 				mavlink_msg_mission_count_pack(1,1,&msg,1,1,1);
@@ -113,7 +114,7 @@ void task1(void const *argument){
 
 		if(uart_tx_Semaphore !=NULL ){
 
-			if( xSemaphoreTake( uart_tx_Semaphore, ( TickType_t ) 10 ) == pdTRUE ){
+			if( xSemaphoreTake( uart_tx_Semaphore, ( TickType_t ) 5 ) == pdTRUE ){
 
 				mavlink_msg_heartbeat_pack(1, 1, &msg, MAV_TYPE_HELICOPTER, MAV_AUTOPILOT_GENERIC, MAV_MODE_GUIDED_ARMED, 0, MAV_STATE_ACTIVE);
 				len = mavlink_msg_to_send_buffer(buf, &msg);
@@ -153,34 +154,24 @@ void task2(void const *argument){
 	HAL_StatusTypeDef  state;
 	float time;
 	TickType_t ticks_;
-	float test;
+	uint8_t test=0;
+	uint8_t test2=2.0;
+	acc3d_t  acc;
 
 
-
-	if(adxl345_init(0x3d) == 0x00){
-			test = 5.0;
-		}else{
-			test = 6.0;
-		}
-
-	if(adxl345_init(210) == 0x00){
-			test = 3.0;
-		}else{
-			test = 4.0;
-		}
-	if(adxl345_init(0xa6) == 0x00){
-			test = 1.0;
-		}else{
-			test = 2.0;
-		}
 	for(;;){
+		if(HMC5883L_init() == 0x00){
+				HAL_GPIO_TogglePin(GPIOG,GPIO_PIN_14);
+			}
+
 		if(uart_tx_Semaphore !=NULL ){
 
-			if( xSemaphoreTake( uart_tx_Semaphore, ( TickType_t ) 10 ) == pdTRUE ){
+			if( xSemaphoreTake( uart_tx_Semaphore, ( TickType_t ) 5 ) == pdTRUE ){
 			ticks_ = xTaskGetTickCount();
 			time = ticks_/1000.0;
 
-			mavlink_msg_local_position_ned_pack(1, 1, &msg, time,test ,2.0 ,3.0 ,3 ,4 ,5);
+			mavlink_msg_local_position_ned_pack(1, 1, &msg, time,acc.ax,acc.ay ,acc.az ,3 ,4 ,5);
+
 			len = mavlink_msg_to_send_buffer(buf, &msg);
 			state = HAL_UART_Transmit_DMA(&huart1, buf, len+8 );
 			while(__HAL_UART_GET_FLAG(&huart1,UART_FLAG_TC)!=SET);
@@ -221,7 +212,6 @@ void receive_task(void const *argument){
 			switch (message.msgid){
 
 				case MAVLINK_MSG_ID_HEARTBEAT :
-					HAL_GPIO_TogglePin(GPIOG,GPIO_PIN_14);
 
 					mavlink_msg_heartbeat_decode(&message , &heart_beat);
 					break;

@@ -2,8 +2,10 @@
 #define __ADXL345_H
 
 #include "i2c.h"
+#define ADXL345_ADDRESS				(0xa6)
+#define ADXL345_WRITE_ADDRESS     	(ADXL345_ADDRESS)
+#define ADXL345_READ_ADDRESS     	(ADXL345_ADDRESS)|0x01
 
-#define ADXL345_DEFAULT_ADDRESS     (0x53)
 #define ADXL345_REG_DEVID               (0x00)    // Device ID
 #define ADXL345_REG_THRESH_TAP          (0x1D)    // Tap threshold
 #define ADXL345_REG_OFSX                (0x1E)    // X-axis offset
@@ -83,24 +85,55 @@ enum
 
 typedef struct acc3d{
 
-	float ax;
-	float ay;
-	float az;
+	uint16_t ax;
+	uint16_t ay;
+	uint16_t az;
 
 }acc3d_t;
 
 
 
 void set_adxl345(uint16_t addr,uint8_t reg, uint8_t data);
+I2C_Result_t adxl345_set_range(void);
 
 
-void read_adxl345(uint16_t addr, uint8_t reg, uint8_t* pdata);
+I2C_Result_t read_adxl345(uint16_t addr, uint8_t reg, uint8_t* pdata);
 
 I2C_Result_t adxl345_init(uint8_t device_address);
 
+I2C_Result_t adxl345_get_dataxyz(acc3d_t* data);
+
+I2C_Result_t adxl345_get_offxyz(acc3d_t* data);
 
 
+I2C_Result_t adxl345_get_mode(uint8_t* data);
 
+I2C_Result_t adxl345_get_id(uint8_t* data);
 
+I2C_Result_t adxl345_config(void);
 
 #endif
+
+
+
+/*
+ *
+ *
+ * adxl345_config();
+	adxl345_set_range();
+	if(adxl345_init(ADXL345_WRITE_ADDRESS) == 0x00){
+		test=1.0;
+
+	}
+
+
+
+	if(adxl345_get_dataxyz(&acc) == 0x00){
+			HAL_GPIO_TogglePin(GPIOG,GPIO_PIN_14);
+		    //adxl345_get_id(&test);
+		}
+
+ *
+ *
+ * */
+
